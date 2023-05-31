@@ -5,15 +5,19 @@
     <div class="container">
       <div class="column column-1">
         <button class="btn" @click="getToday(0,30,1)">今天未完成的日程</button>
+        <button class="btn" @click="getTodayuf(0,30,1)">今天所有的日程</button>
         <button class="btn" @click="getWeek(0,30,1)">这周未完成的日程</button>
+        <button class="btn" @click="getWeekuf(0,30,1)">这周所有的日程</button>
         <button class="btn" @click="getUnfinished(0,30,1)">所有未完成的日程</button>
         <button class="btn" @click="getAll(0,30,1)">全部日程</button>
+        <input type="text" v-model="searchText" @keyup.enter="search" placeholder="根据标签搜索日程……"/>
+        <button @click="search(searchText,0,30,1)">搜索</button>
       </div>
       <div class="column column-2">
         <button class="new-schedule btn" @click="newSchedule">新建日程</button>
         <div class="schedule" v-for="(schedule, index) in schedules" :key="index">
           <input type="checkbox" v-model="schedule.is_finish" @change="updateSchedule(schedule)" />
-          <div class="schedule-content" @click="showSchedule(schedule)">{{ schedule.event.slice(0,45) }}</div>
+          <div class="schedule-content" @click="showSchedule(schedule)"><p>日程标题：{{ schedule.event.slice(0,15) }}</p><p>截止时间：{{formatDate(schedule.end_at)}}</p></div>
           <button class="delete-schedule" @click="deleteSchedule(schedule)">🗑️</button>
         </div>
         <div class="pagination">
@@ -66,7 +70,9 @@ export default {
       selectedSchedule: null,
       method:this.getToday,
       begin:0,
-      end:30
+      end:30,
+      searchText:"",
+      tags:""
     };
   },
   mounted() {
@@ -92,6 +98,20 @@ export default {
         })
   },
   methods: {
+    search(tag,begin,end,m){
+      this.begin=begin;
+      this.end=end;
+      axios.get("http://schedule.dckong.com:11451/schedule/getByTag?tag="+tag+"&begin="+begin+"&end="+end,
+          { withCredentials: true })
+          .then(response=>{
+            if(response.data.length===0 && m===1) alert("没有符合要求的日程")
+            else{
+              this.schedules=response.data;
+              this.method=this.search;
+              this.tags=tag;
+            }
+          })
+    },
     getToday(begin,end,m) {
       this.begin=begin;
       this.end=end;
@@ -107,6 +127,23 @@ export default {
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
             this.method=this.getToday;}
+          })
+    },
+    getTodayuf(begin,end,m) {
+      this.begin=begin;
+      this.end=end;
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+      const startOfDayTimestamp = startOfDay.getTime();
+      const endOfDayTimestamp = endOfDay.getTime();
+      axios.get("http://schedule.dckong.com:11451/schedule/getByTime?begin_time="+(startOfDayTimestamp)+"&end_time="+
+          (endOfDayTimestamp)+"&select_by=2&begin="+begin+"&end="+end+"&getFinish=True",{ withCredentials: true })
+          .then(response=>{
+            if(response.data.length===0 && m===1) alert("没有符合要求的日程")
+            else{this.schedules=response.data;
+              this.method=this.getToday;}
           })
     },
     getWeek(begin,end,m) {
@@ -144,6 +181,41 @@ export default {
             this.method=this.getWeek;}
           })
     },
+    getWeekuf(begin,end,m) {
+      this.begin=begin;
+      this.end=end;
+      // 获取当前日期
+      var currentDate = new Date();
+
+      // 获取当前星期几 (0-6)
+      var currentDay = currentDate.getDay();
+
+      // 计算本周一的日期
+      var monday = new Date(currentDate.getTime() - (currentDay - 1) * 24 * 60 * 60 * 1000);
+
+      // 设置时间为零点
+      monday.setHours(0, 0, 0, 0);
+
+      // 获取本周一零点的时间戳
+      var mondayTimestamp = monday.getTime();
+
+      // 计算本周日的日期
+      var sunday = new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+      // 设置时间为23:59:59
+      sunday.setHours(23, 59, 59, 999);
+
+      // 获取本周日23:59:59的时间戳
+      var sundayTimestamp = sunday.getTime();
+
+      axios.get("http://schedule.dckong.com:11451/schedule/getByTime?begin_time="+(mondayTimestamp)+"&end_time="+
+          (sundayTimestamp)+"&select_by=2&begin="+begin+"&end="+end+"&getFinish=True",{ withCredentials: true })
+          .then(response=>{
+            if(response.data.length===0 && m===1) alert("没有符合要求的日程")
+            else{this.schedules=response.data;
+              this.method=this.getWeek;}
+          })
+    },
     getUnfinished(begin,end,m) {
       this.begin=begin;
       this.end=end;
@@ -166,9 +238,11 @@ export default {
     },
     prevPage(){
       if(this.begin===0) return;
+      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,1);
       this.method(this.begin-30,this.end-30,1);
     },
     nextPage(){
+      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,1);
       this.method(this.begin+30,this.end+30,1);
     },
     newSchedule() {
@@ -181,6 +255,7 @@ export default {
     deleteSchedule(schedule) {
       axios.post("http://schedule.dckong.com:11451/schedule/remove?sid="+schedule.sid,null,
           { withCredentials: true });
+      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,0);
       this.method(this.begin,this.end,0);
     },
     showSchedule(schedule) {
@@ -276,6 +351,9 @@ export default {
 }
 button:active {
   background-color: darkgreen;
+}
+.schedule{
+  border:0.5px solid black;
 }
 </style>
 
