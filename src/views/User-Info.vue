@@ -51,6 +51,7 @@
             <li><router-link to="/" @click.native="logout">退出登录</router-link></li>
           </ul>
         </div>
+        <button class="btn" @click="getAnalyze">获取近期日程分析</button>
 <!--        <button class="btn">展示日程为栏</button>-->
 <!--        <button class="btn">展示日程为日历</button>-->
       </div>
@@ -98,6 +99,9 @@ export default {
         })
   },
   methods: {
+    getAnalyze(){
+      window.open("/analyze");
+    },
     search(tag,begin,end,m){
       this.begin=begin;
       this.end=end;

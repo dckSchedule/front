@@ -9,6 +9,7 @@ import forgot_password from "@/views/Forgot-Password";
 import updatePassword from "@/views/UpdatePassword";
 import ChangeMailBox from "@/views/ChangeMailBox";
 import NewDiary from "@/views/NewDiary";
+import Analyze from "@/views/Analyze";
 Vue.use(VueRouter);
 
 const routes = [
@@ -47,6 +48,11 @@ const routes = [
       path:"/newDairy",
       name:"newDiary",
       component: NewDiary
+    },
+    {
+        path:"/analyze",
+        name:"analyze",
+        component: Analyze
     },
     {
         path: '*',
