@@ -7,18 +7,37 @@
         <input type="text" id="details" v-model="details" required maxlength="500"/>
       </div>
       <div>
-        <label for="tags">日程标签(不超过120位):</label>
-        <input type="text" id="tags" v-model="tags" required maxlength="120"/>
+        <label for="tags">日程标签(不超过15位):</label>
+        <input type="text" id="tags" v-model="tags" required maxlength="15"/>
       </div>
       <div>
         <label for="start">开始时间:</label>
         <input type="datetime-local" id="start" v-model="start" />
       </div>
       <div>
-        <label for="end">截至时间:</label>
+        <label for="end">截止时间:</label>
         <input type="datetime-local" id="end" v-model="end" />
       </div>
-      <button type="submit">提交</button>
+      <div class="rp">
+        重复方式：每
+        <input type="number" v-model.number="x" style="width: 30px" class="rp"/>
+        <select v-model="y" style="width: 50px" class="rp">
+          <option value="1">日</option>
+          <option value="7">周</option>
+          <option value="30">月</option>
+          <option value="365">年</option>
+        </select>
+        重复
+        <div v-if="repeat < 0" style="color: red">重复周期不能是负数</div>
+        <div v-if="repeat > 1825" style="color: red">重复周期不得大于5年</div>
+      </div>
+      <!-- 当选择不是不重复时，出现一个标签 -->
+      <div v-if="repeat > 0 && repeat<=1825">
+        <label for=“endrepeattime”>重复截止时间:</label>
+        <input type="datetime-local" id=“endrepeattime” v-model="endrepeattime" />
+      </div>
+      <br>
+      <button type="submit" :disabled="x < 0||x>1825">提交</button>
     </form>
   </div>
 </template>
@@ -32,20 +51,35 @@ export default {
       details: "",
       tags: "",
       start: "",
-      end: ""
+      end: "",
+      repeat:0,
+      x:0,
+      y:"1",
+      endrepeattime: null
     };
+  },
+  watch: {
+    x(newVal) {
+      this.repeat = newVal * this.y;
+    },
+    y(newVal) {
+      this.repeat = this.x * newVal;
+    },
   },
   methods: {
     submitForm() {
       const startTimestamp = new Date(this.start).getTime();
       const endTimestamp = new Date(this.end).getTime();
+      const endRepeatTime=new Date(this.endrepeattime).getTime();
       if(Number.isNaN(startTimestamp) || Number.isNaN(endTimestamp)){alert("时间不得为空");return;}
       console.log(startTimestamp)
       axios.post("http://schedule.dckong.com:11451/schedule/new",{
         event: this.details,
         tag: this.tags,
         begin: startTimestamp,
-        end: endTimestamp
+        end: endTimestamp,
+        repeat:this.repeat,
+        endRepeat:endRepeatTime
       },{ withCredentials: true }).then(response=>{
         if(response.status===200){
           alert("创建日程成功");
@@ -59,6 +93,9 @@ export default {
 };
 </script>
 <style scoped>
+.rp{
+  display: inline-block;
+}
 body {
   font-family: Arial, sans-serif;
   margin: 0;

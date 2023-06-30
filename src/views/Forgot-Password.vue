@@ -4,19 +4,22 @@
     <form @submit.prevent="submitForm">
       <div class="form-group">
         <label>注册时绑定的邮箱:</label>
+        <br>
         <input type="email" v-model="email" required />
-      </div>
-      <div class="form-group">
         <button @click="sendVerificationCode" :disabled="isDisabled">
           发送验证码{{ remainingTime > 0 ? `(${remainingTime}s)` : "" }}
         </button>
       </div>
       <div class="form-group">
+      </div>
+      <div class="form-group">
         <label>验证码:</label>
+        <br>
         <input type="text" v-model="verificationCode" required />
       </div>
       <div class="form-group">
         <label>设置新密码(不得超过32位):</label>
+        <br>
         <input type="password" v-model="newPassword" required maxlength="32" />
       </div>
       <button type="submit">提交</button>
@@ -86,7 +89,12 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .form-group {
   margin-bottom: 10px;
 }
@@ -101,5 +109,14 @@ export default {
 .form-group input[type="password"],
 .form-group input[type="email"] {
   width: 200px;
+  padding: 5px;
+  border: 1px solid #ccc;
+}
+.form-group input[type="email"]{
+  margin-right: 5px;
+}
+button[type="submit"]{
+  width:100%;
+  padding:10px
 }
 </style>

@@ -3,8 +3,14 @@
     <div class="left">
       <p>你近期一共有 {{sum}} 个日程</p>
       <p>有 {{end}} 个日程已经截止，其中你完成了 {{finish}} 个日程</p>
+      <p v-if="finish/end>0.8">你能够记得完成80%以上的任务,做的很棒！</p>
+      <p v-else-if="finish/end>=0.5">你能完成半数以上的任务，做的不错！</p>
+      <p v-else>你完成的任务比较少，最近是有什么别的事吗？<br/>努力调整一下！</p>
       <p>有 {{overdue}} 个日程逾期完成</p>
+      <p v-if="overdue/finish<0.2">超过80%的任务你都能够按时完成，时间观念不错！</p>
+      <p v-else>还需要提升时间观念，争取按时完成任务</p>
       <p>还有 {{urgent}} 个日程是赶着 ddl 完成的</p>
+      <p>注意要留出一定富裕时间</p>
     </div>
     <div class="right chart-container">
       <div id="chart1"></div>
@@ -133,7 +139,9 @@ export default {
             ]
           };
           chart3.setOption(option3);
-        });
+        }).catch(error=>{
+          this.$router.push("/login");
+    });
   }
 }
 </script>

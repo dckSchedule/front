@@ -4,16 +4,18 @@
   <div id="app">
     <div class="container">
       <div class="column column-1">
-        <button class="btn" @click="getToday(0,30,1)">今天未完成的日程</button>
-        <button class="btn" @click="getTodayuf(0,30,1)">今天所有的日程</button>
-        <button class="btn" @click="getWeek(0,30,1)">这周未完成的日程</button>
-        <button class="btn" @click="getWeekuf(0,30,1)">这周所有的日程</button>
-        <button class="btn" @click="getUnfinished(0,30,1)">所有未完成的日程</button>
-        <button class="btn" @click="getAll(0,30,1)">全部日程</button>
-        <input type="text" v-model="searchText" @keyup.enter="search" placeholder="根据标签搜索日程……"/>
-        <button @click="search(searchText,0,30,1)">搜索</button>
+        <button class="btn" @click="getToday(0,10,1)">今日未完成</button>
+        <button class="btn" @click="getTodayuf(0,10,1)">今日全部</button>
+        <button class="btn" @click="getWeek(0,10,1)">本周未完成</button>
+        <button class="btn" @click="getWeekuf(0,10,1)">本周全部</button>
+        <button class="btn" @click="getUnfinished(0,10,1)">所有未完成</button>
+        <button class="btn" @click="getAll(0,10,1)">全部</button>
+        <input type="text" v-model="searchText" @keyup.enter="search" required maxlength="15" placeholder="根据标签搜索日程……"/>
+        <button @click="search(searchText,0,10,1)">搜索</button>
       </div>
       <div class="column column-2">
+        <h2>{{scheduleType}}</h2>
+        <br>
         <button class="new-schedule btn" @click="newSchedule">新建日程</button>
         <div class="schedule" v-for="(schedule, index) in schedules" :key="index">
           <input type="checkbox" v-model="schedule.is_finish" @change="updateSchedule(schedule)" />
@@ -27,7 +29,7 @@
       </div>
       <div class="column column-3">
         <div v-if="selectedSchedule">
-          <h2>日程信息</h2>
+          <h2>日程详细信息</h2>
           <br />
           <br />
           日程信息：{{ selectedSchedule.event }}
@@ -37,8 +39,16 @@
           <br />
           开始日期：{{ formatDate(selectedSchedule.begin_at) }}
           <br />
-          截止日期：{{ formatDate(selectedSchedule.end_at) }}
+          <p style="color:red">截止日期：{{ formatDate(selectedSchedule.end_at) }} {{selectedSchedule.is_finish?"":(Date.parse(new Date())>selectedSchedule.end_at?"已逾期":Date.parse(new Date())>selectedSchedule.begin_at?"任务进行中":"任务待开始")}}</p>
           <br />
+          重复周期：<p v-if="selectedSchedule.repeat_==0">不重复</p>
+          <div v-else>
+            每 {{selectedSchedule.repeat_/86400000}} 日重复
+            <p style="color:blue">
+              截止重复时间：{{formatDate(selectedSchedule.endRepeatTime)}}
+            </p>
+          </div>
+          <br/>
           完成状态：{{selectedSchedule.is_finish?"已完成":"未完成"}}
         </div>
       </div>
@@ -71,9 +81,11 @@ export default {
       selectedSchedule: null,
       method:this.getToday,
       begin:0,
-      end:30,
+      end:10,
       searchText:"",
-      tags:""
+      tags:"",
+      scheduleType:"今日未完成",
+
     };
   },
   mounted() {
@@ -93,9 +105,11 @@ export default {
     const startOfDayTimestamp = startOfDay.getTime();
     const endOfDayTimestamp = endOfDay.getTime();
     axios.get("http://schedule.dckong.com:11451/schedule/getByTime?begin_time="+(startOfDayTimestamp)+"&end_time="+
-        (endOfDayTimestamp)+"&select_by=2&begin=0&end=30&getFinish=False",{ withCredentials: true })
+        (endOfDayTimestamp)+"&select_by=2&begin=0&end=10&getFinish=False",{ withCredentials: true })
         .then(response=>{
           this.schedules=response.data;
+        })
+        .catch(error=>{
         })
   },
   methods: {
@@ -103,6 +117,7 @@ export default {
       window.open("/analyze");
     },
     search(tag,begin,end,m){
+
       this.begin=begin;
       this.end=end;
       axios.get("http://schedule.dckong.com:11451/schedule/getByTag?tag="+tag+"&begin="+begin+"&end="+end,
@@ -110,6 +125,7 @@ export default {
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{
+              this.scheduleType="标签为\""+tag+"\"";
               this.schedules=response.data;
               this.method=this.search;
               this.tags=tag;
@@ -117,6 +133,7 @@ export default {
           })
     },
     getToday(begin,end,m) {
+
       this.begin=begin;
       this.end=end;
       const now = new Date();
@@ -129,11 +146,13 @@ export default {
           (endOfDayTimestamp)+"&select_by=2&begin="+begin+"&end="+end+"&getFinish=False",{ withCredentials: true })
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
-            else{this.schedules=response.data;
+            else{
+              this.scheduleType="今日未完成";this.schedules=response.data;
             this.method=this.getToday;}
           })
     },
     getTodayuf(begin,end,m) {
+
       this.begin=begin;
       this.end=end;
       const now = new Date();
@@ -147,10 +166,12 @@ export default {
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
-              this.method=this.getToday;}
+              this.scheduleType="今日全部"
+              this.method=this.getTodayuf;}
           })
     },
     getWeek(begin,end,m) {
+
       this.begin=begin;
       this.end=end;
       // 获取当前日期
@@ -182,10 +203,12 @@ export default {
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
+              this.scheduleType="本周未完成"
             this.method=this.getWeek;}
           })
     },
     getWeekuf(begin,end,m) {
+
       this.begin=begin;
       this.end=end;
       // 获取当前日期
@@ -217,16 +240,19 @@ export default {
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
-              this.method=this.getWeek;}
+              this.scheduleType="本周全部"
+              this.method=this.getWeekuf;}
           })
     },
     getUnfinished(begin,end,m) {
+
       this.begin=begin;
       this.end=end;
       axios.get("http://schedule.dckong.com:11451/schedule/getAll?begin="+begin+"&end="+end+"&getFinish=False",{ withCredentials: true })
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
+              this.scheduleType="全部未完成";
             this.method=this.getUnfinished;}
           })
     },
@@ -237,49 +263,66 @@ export default {
           .then(response=>{
             if(response.data.length===0 && m===1) alert("没有符合要求的日程")
             else{this.schedules=response.data;
+              this.scheduleType="全部"
             this.method=this.getAll;}
           })
     },
     prevPage(){
-      if(this.begin===0) return;
-      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,1);
-      this.method(this.begin-30,this.end-30,1);
+      if(this.begin===0){
+        alert("已是第一页")
+        return;
+      }
+      console.log(this.method===this.search);
+      if(this.method===this.search) this.method(this.tags,this.begin-10,this.end-10,1);
+      else this.method(this.begin-10,this.end-10,1);
     },
     nextPage(){
-      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,1);
-      this.method(this.begin+30,this.end+30,1);
+      console.log(this.searchText);
+      if(this.method===this.search) this.method(this.tags,this.begin+10,this.end+10,1);
+      else this.method(this.begin+10,this.end+10,1);
     },
     newSchedule() {
-      window.open("/newDairy")
+      this.$router.push("/newDairy")
     },
     updateSchedule(schedule) {
       axios.post("http://schedule.dckong.com:11451/schedule/setFinish?sid="+schedule.sid,null,
           { withCredentials: true })
     },
     deleteSchedule(schedule) {
-      axios.post("http://schedule.dckong.com:11451/schedule/remove?sid="+schedule.sid,null,
-          { withCredentials: true });
-      if(this.method===this.search) this.method(this.tags,this.begin-30,this.end-30,0);
-      this.method(this.begin,this.end,0);
+      if (confirm('是否确认删除此日程？注意：此操作不可恢复')) {
+        axios.post("http://schedule.dckong.com:11451/schedule/remove?sid="+schedule.sid,null,
+            { withCredentials: true });
+        setTimeout(() => {
+          if(this.method===this.search) this.method(this.tags,this.begin-10,this.end-10,0);
+          this.method(this.begin,this.end,0);
+        }, 500);
+      } else {
+        // 不进行任何操作
+      }
     },
     showSchedule(schedule) {
-
       this.selectedSchedule = schedule;
+
     },
     toggleMenu(){
       this.showUserMenu=!this.showUserMenu;
     },
     logout(){
       axios.post("http://schedule.dckong.com:11451/auth/logout",null,{ withCredentials: true });
+      alert("退出登录成功！")
       this.$router.push("/login");
     },
     formatDate(timestamp) {
-      const date = new Date(timestamp);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const hour=date.getHours();
-      const minute=date.getMinutes();
+      let date = new Date(timestamp);
+      let year = date.getFullYear();
+      let month = date.getMonth() + 1;
+      if(month<10) month="0"+month;
+      let day = date.getDate();
+      if(day<10) day="0"+day;
+      let hour=date.getHours();
+      if(hour<10) hour="0"+hour;
+      let minute=date.getMinutes();
+      if(minute<10) minute="0"+minute;
       return `${year}-${month}-${day} ${hour}:${minute}`;
     }
   },
@@ -322,42 +365,49 @@ export default {
 }
 .schedule {
   display: flex;
+  margin-bottom:5px; /* add space between schedules */
 }
 .schedule-content {
-  flex-grow: 1;
+  flex-grow:1;
 }
 .user-menu:hover ul {
-  display: block;
+  display:block;
 
 }
 .user-menu ul {
-  display: none;
+  display:none;
 
 }
 .btn {
-  background-color: #4CAF50; /* Green */
-  border: none;
-  color: white;
-  padding: 15px 32px;
-  text-align: center;
-  text-decoration: none;
-  display:block; /* make buttons stack verticall'y */
+  background-color:#4CAF50; /* Green */
+  border:none;
+  color:white;
+  padding:15px 32px;
+  text-align:center;
+  text-decoration:none;
+  display:block; /* make buttons stack vertically */
   margin-bottom:10px; /* add space between buttons */
+  width:100%; /* make buttons fill column */
 }
+
+.btn:focus{
+  background-color:#006400; /* darken button when clicked */
+}
+
 .new-schedule {
 
 }
 .pagination {
-  position: absolute;
-  bottom: calc(2.5vw);
-  left: 50%;
-  transform: translateX(-50%);
+  position:absolute;
+  bottom:calc(2.5vw);
+  left:50%;
+  transform:translateX(-50%);
 }
-button:active {
-  background-color: darkgreen;
-}
+
 .schedule{
-  border:0.5px solid black;
+  background-color:#d3d3d3; /* set schedule background color to light grey */
+  border:none; /* remove schedule border */
 }
+
 </style>
 

@@ -2,14 +2,17 @@
 /* eslint-disable vue/multi-word-component-names */
 <template>
   <div class="login">
+    <v-img :src="require('../assets/logo.jpg')"></v-img>
     <h1>登录-日程管理系统</h1>
     <form @submit.prevent="login">
       <div class="form-group">
-        <label for="username">用户名</label>
+        <label for="username">用户名或注册用的邮箱:</label>
+        <br/>
         <input type="text" id="username" v-model="username" required />
       </div>
       <div class="form-group">
-        <label for="password">密码</label>
+        <label for="password">密码:</label>
+        <br>
         <input type="password" id="password" v-model="password" required />
       </div>
       <div class="form-actions">
@@ -58,6 +61,7 @@ export default {
 <style scoped>
 .login {
   width: 400px;
+  margin: auto;
 }
 
 .form-group {
@@ -75,7 +79,7 @@ input {
 }
 
 button {
-  width: 100%;
+  width: 110%;
   padding: 10px;
   background-color: #0099ff;
   color: white;
@@ -86,6 +90,6 @@ button {
   justify-content: space-between;
   align-items: center;
   white-space: nowrap;
-  margin: 0 10px;
+  margin: 0 0px;
 }
 </style>
